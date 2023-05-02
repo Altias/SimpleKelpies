@@ -9,7 +9,9 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.entity.mob.Angerable;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -49,18 +51,19 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(0, new SwimGoal(this));
+        this.goalSelector.add(1, new SwimGoal(this));
+        this.goalSelector.add(4, new PounceAtTargetGoal(this, 0.4f));
+        this.goalSelector.add(5, new MeleeAttackGoal(this, 1.2, true));
+        this.goalSelector.add(7, new AnimalMateGoal(this, 1.0));
+        this.goalSelector.add(8, new WanderAroundFarGoal(this, 0.7));
+        this.goalSelector.add(10, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
+        this.goalSelector.add(10, new LookAroundGoal(this));
         this.targetSelector.add(3, new RevengeGoal(this, new Class[0]));
-        this.goalSelector.add(2, new MeleeAttackGoal(this, 1.2D, false));
-        this.goalSelector.add(6, new WanderAroundFarGoal(this, 0.7));
-        this.goalSelector.add(7, new LookAtEntityGoal(this, PlayerEntity.class, 6.0f));
-        this.goalSelector.add(8, new LookAroundGoal(this));
+        this.targetSelector.add(4, new ActiveTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
+        this.targetSelector.add(8, new UniversalAngerGoal<KelpieEntity>(this, true));
         if (this.shouldAmbientStand() && !hasAngerTime()){
             this.goalSelector.add(9, new AmbientStandGoal(this));
         }
-
-        this.targetSelector.add(8, new UniversalAngerGoal<KelpieEntity>(this, false));
-        this.targetSelector.add(4, new ActiveTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
     }
 
     @Override
