@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "simplekelpies",
+	"version": "${version}",
+	"name": "SimpleKelpies",
+	"description": "Adds mythical kelpies to Minecraft",
+	"authors": [
+		"Altias"
+	],
+	"contact": {
+		"homepage": "https://heretic-altias.tumblr.com/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/simplekelpies/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.altias.simplekelpies.SimpleKelpies"
+		],
+		"client": [
+			"net.altias.simplekelpies.SimpleKelpiesClient"
+		],
+		"fabric-datagen": [
+			"net.altias.simplekelpies.SimpleKelpiesDataGenerator"
+		]
+	},
+	"mixins": [
+		"simplekelpies.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.14.19",
+		"minecraft": "~1.19.3",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

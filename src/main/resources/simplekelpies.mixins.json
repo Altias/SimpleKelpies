@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "net.altias.simplekelpies.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"mixins": [
+		"KelpieMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
