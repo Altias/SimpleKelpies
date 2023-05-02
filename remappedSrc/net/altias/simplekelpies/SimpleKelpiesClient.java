@@ -1,7 +1,6 @@
 package net.altias.simplekelpies;
 
 import net.altias.simplekelpies.entity.ModEntities;
-import net.altias.simplekelpies.entity.client.KelpieModelData;
 import net.altias.simplekelpies.entity.client.KelpieRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
@@ -22,7 +21,6 @@ public class SimpleKelpiesClient implements ClientModInitializer {
             return new KelpieRenderer(context);
         });
 
-        EntityModelLayerRegistry.registerModelLayer(MODEL_KELPIE_LAYER, KelpieModelData::createModelData);
+        EntityModelLayerRegistry.registerModelLayer(MODEL_KELPIE_LAYER, TexturedModelData.of(HorseEntityModel.getModelData(Dilation.NONE), 64, 64));
     }
-
 }
