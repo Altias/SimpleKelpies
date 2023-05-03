@@ -1,7 +1,9 @@
 package net.altias.simplekelpies.entity.custom;
 
 import net.altias.simplekelpies.SimpleKelpies;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -12,27 +14,35 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.passive.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.TimeHelper;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.EntityView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.EnumSet;
 import java.util.UUID;
 
 public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     private static final TrackedData<Integer> ANGER_TIME = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
+
+    public Entity lastPass;
 
     @Nullable
     private UUID angryAt;
@@ -52,6 +62,8 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     @Override
     protected void initGoals() {
         this.goalSelector.add(1, new SwimGoal(this));
+        this.goalSelector.add(2, new TakeRiderToWaterGoal(this));
+        this.goalSelector.add(2, new SlayRiderGoal(this));
         this.goalSelector.add(4, new PounceAtTargetGoal(this, 0.4f));
         this.goalSelector.add(5, new MeleeAttackGoal(this, 1.2, true));
         this.goalSelector.add(7, new AnimalMateGoal(this, 1.0));
@@ -59,9 +71,10 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         this.goalSelector.add(10, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         this.goalSelector.add(10, new LookAroundGoal(this));
         this.targetSelector.add(3, new RevengeGoal(this, new Class[0]));
+        this.targetSelector.add(3, new SlayRiderGoal(this, new Class[0]));
         this.targetSelector.add(4, new ActiveTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
         this.targetSelector.add(8, new UniversalAngerGoal<KelpieEntity>(this, true));
-        if (this.shouldAmbientStand() && !hasAngerTime()){
+        if (this.shouldAmbientStand() && !this.hasAngerTime() &&!this.hasPassengers()) {
             this.goalSelector.add(9, new AmbientStandGoal(this));
         }
     }
@@ -104,7 +117,6 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     @Override
     public void setAngerTime(int angerTime) {
         this.dataTracker.set(ANGER_TIME, angerTime);
-        SimpleKelpies.LOGGER.info("rage!");
     }
 
     @Nullable
@@ -116,7 +128,6 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     @Override
     public void setAngryAt(@Nullable UUID angryAt) {
         this.angryAt = angryAt;
-        SimpleKelpies.LOGGER.info("target sighted!");
     }
 
     @Override
@@ -181,4 +192,117 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             this.tickAngerLogic((ServerWorld)this.world, true);
         }
     }
+
+    @Override
+    public void tick() {
+
+        super.tick();
+
+        if (this.hasPassengers())
+        {
+            lastPass = getFirstPassenger();
+        }
+
+        if (lastPass != null) {
+            if (!lastPass.isAlive()) {
+                lastPass = null;
+            }
+        }
+
+
+
+    }
+
+    class TakeRiderToWaterGoal extends MoveIntoWaterGoal
+    {
+        private final PathAwareEntity mob;
+        private LivingEntity pass;
+
+        public TakeRiderToWaterGoal(PathAwareEntity mob) {
+            super(mob);
+            this.mob = mob;
+        }
+
+        @Override
+        public boolean canStart()
+        {
+            if (super.canStart() && this.mob.hasPassengers() && !this.mob.isTouchingWater())
+            {
+                if(this.mob.getFirstPassenger() instanceof LivingEntity) {
+                    this.pass = (LivingEntity)this.mob.getFirstPassenger();
+                    return true;
+
+                }
+
+            }
+            return false;
+        }
+
+        @Override
+        public void start() {
+            Vec3i blockPos = null;
+            BlockPos oldPos = null;
+            BlockPos newPos = null;
+            Iterable<BlockPos> iterable = BlockPos.iterate(MathHelper.floor(this.mob.getX() - 20.0), MathHelper.floor(this.mob.getY() - 10.0), MathHelper.floor(this.mob.getZ() - 20.0), MathHelper.floor(this.mob.getX() + 20.0), this.mob.getBlockY(), MathHelper.floor(this.mob.getZ() + 20.0));
+            for (BlockPos blockPos2 : iterable) {
+                if (!this.mob.world.getFluidState(blockPos2).isIn(FluidTags.WATER)) continue;
+                blockPos = blockPos2;
+                break;
+            }
+            if (blockPos != null) {
+                this.mob.getNavigation().startMovingTo(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1.0);
+            }
+        }
+    }
+
+    class SlayRiderGoal extends TrackTargetGoal{
+
+        private final KelpieEntity mob;
+        private LivingEntity pass;
+        private final Class<?>[] noRevengeTypes;
+
+        public SlayRiderGoal(KelpieEntity mob,Class<?> ... noRevengeTypes)
+        {
+            super(mob,true);
+            this.noRevengeTypes = noRevengeTypes;
+            this.setControls(EnumSet.of(Goal.Control.TARGET));
+            this.mob = mob;
+        }
+        @Override
+        public boolean canStart() {
+
+                if(this.mob.hasPassengers() && this.mob.isTouchingWater())
+                {
+                    if(this.mob.getFirstPassenger() instanceof LivingEntity) {
+                        this.pass = (LivingEntity)this.mob.getFirstPassenger();
+                        return true;
+                    }
+
+                }
+
+            if(this.mob.lastPass != null && !this.mob.hasPassengers())
+            {
+                if(this.mob.lastPass instanceof LivingEntity) {
+                    this.pass = (LivingEntity)lastPass;
+                    return true;
+                }
+
+            }
+
+            return false;
+        }
+
+        @Override
+        public void start()
+        {
+                this.mob.setTarget(this.pass);
+                this.target = this.mob.getTarget();
+                this.maxTimeWithoutVisibility = 300;
+
+
+                super.start();
+
+        }
+    }
+
 }
