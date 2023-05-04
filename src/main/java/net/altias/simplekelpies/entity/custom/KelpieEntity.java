@@ -177,6 +177,9 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             this.heal(item.getFoodComponent().getHunger());
             this.playEatingAnimation();
             this.emitGameEvent(GameEvent.EAT);
+            if (!player.getAbilities().creativeMode) {
+                itemStack.decrement(1);
+            }
             return ActionResult.SUCCESS;
         }
 
