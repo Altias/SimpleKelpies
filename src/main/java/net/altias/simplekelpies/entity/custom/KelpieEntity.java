@@ -6,6 +6,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.entity.ai.goal.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -42,6 +43,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.intprovider.UniformIntProvider;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.EntityView;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,7 +84,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         this.goalSelector.add(8, new WanderAroundFarGoal(this, 0.7));
         this.goalSelector.add(10, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         this.goalSelector.add(10, new LookAroundGoal(this));
-        this.targetSelector.add(3, new RevengeGoal(this, new Class[0]));
+        this.targetSelector.add(3, new KelpieRevengeGoal(this, new Class[0]));
         this.targetSelector.add(3, new SlayRiderGoal(this, new Class[0]));
         this.targetSelector.add(8, new UniversalAngerGoal<KelpieEntity>(this, true));
         if (this.shouldAmbientStand() && !this.hasAngerTime() &&!this.hasPassengers()) {
@@ -259,15 +261,6 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             }
         }
 
-        if(this.getTarget() != null) {
-            if (this.getTarget() instanceof PlayerEntity && this.isTame()) {
-
-                SimpleKelpies.LOGGER.info("I am a terrible no good kelpie attacking my owner");
-                this.setTarget(null);
-                this.setAngryAt(null);
-            }
-        }
-
         if (!this.world.isClient) {
             this.tickAngerLogic((ServerWorld)this.world, true);
         }
@@ -323,7 +316,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             Vec3i blockPos = null;
             BlockPos oldPos = null;
             BlockPos newPos = null;
-            Iterable<BlockPos> iterable = BlockPos.iterate(MathHelper.floor(this.mob.getX() - 20.0), MathHelper.floor(this.mob.getY() - 10.0), MathHelper.floor(this.mob.getZ() - 20.0), MathHelper.floor(this.mob.getX() + 20.0), this.mob.getBlockY(), MathHelper.floor(this.mob.getZ() + 20.0));
+            Iterable<BlockPos> iterable = BlockPos.iterate(MathHelper.floor(this.mob.getX() - 20.0), MathHelper.floor(this.mob.getY() - 5.0), MathHelper.floor(this.mob.getZ() - 20.0), MathHelper.floor(this.mob.getX() + 20.0), this.mob.getBlockY(), MathHelper.floor(this.mob.getZ() + 20.0));
             for (BlockPos blockPos2 : iterable) {
                 if (!this.mob.world.getFluidState(blockPos2).isIn(FluidTags.WATER)) continue;
                 blockPos = blockPos2;
@@ -397,6 +390,44 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
 
                 super.start();
 
+        }
+    }
+
+    class KelpieRevengeGoal extends RevengeGoal
+    {
+        private final KelpieEntity mob;
+        private int lastAttackedTime;
+        private final Class<?>[] noRevengeTypes;
+        private static final TargetPredicate VALID_AVOIDABLES_PREDICATE = TargetPredicate.createAttackable().ignoreVisibility().ignoreDistanceScalingFactor();
+
+        public KelpieRevengeGoal(KelpieEntity mob, Class<?> ... noRevengeTypes) {
+            super(mob, noRevengeTypes);
+            this.mob = mob;
+            this.noRevengeTypes = noRevengeTypes;
+            this.setControls(EnumSet.of(Goal.Control.TARGET));
+        }
+
+        @Override
+        public boolean canStart() {
+            int i = this.mob.getLastAttackedTime();
+            LivingEntity livingEntity = this.mob.getAttacker();
+
+            if (i == this.lastAttackedTime || livingEntity == null) {
+                return false;
+            }
+
+            if(livingEntity instanceof PlayerEntity && this.mob.isTame())
+            {
+                return false;
+            }
+            if (livingEntity.getType() == EntityType.PLAYER && this.mob.world.getGameRules().getBoolean(GameRules.UNIVERSAL_ANGER)) {
+                return false;
+            }
+            for (Class<?> class_ : this.noRevengeTypes) {
+                if (!class_.isAssignableFrom(livingEntity.getClass())) continue;
+                return false;
+            }
+            return this.canTrack(livingEntity, VALID_AVOIDABLES_PREDICATE);
         }
     }
 
