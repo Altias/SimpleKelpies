@@ -1,4 +1,6 @@
-# SimpleKelpies-1.19.3
+# SimpleKelpies-1.19.4
+
+I know the repository is named 1.19.3 but I promise it's actually for 1.19.4, I started developing on .3 before updating it.
 
 Simple Kelpies, as the name suggests, adds kelpies to Minecraft!
 
