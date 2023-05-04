@@ -45,6 +45,7 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.EntityView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
@@ -56,6 +57,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     private static final int SADDLED_FLAG = 4;
 
     public Entity lastPass;
+    public boolean noWater;
 
     @Nullable
     private UUID angryAt;
@@ -170,6 +172,14 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             return ActionResult.SUCCESS;
         }
 
+        if (this.isTame() && itemStack.isFood() && (item.getFoodComponent().isMeat() || itemStack.isOf(Items.COD) || itemStack.isOf(Items.SALMON)) && this.getHealth() < this.getMaxHealth()) {
+
+            this.heal(item.getFoodComponent().getHunger());
+            this.playEatingAnimation();
+            this.emitGameEvent(GameEvent.EAT);
+            return ActionResult.SUCCESS;
+        }
+
         super.interactMob(player, hand);
 
         return ActionResult.SUCCESS;
@@ -227,6 +237,15 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     public boolean canBreatheInWater() {
         return true;
     }
+
+    private void playEatingAnimation() {
+        SoundEvent soundEvent;
+        //this.setEating();
+        if (!this.isSilent() && (soundEvent = this.getEatSound()) != null) {
+            this.world.playSound(null, this.getX(), this.getY(), this.getZ(), soundEvent, this.getSoundCategory(), 1.0f, 1.0f + (this.random.nextFloat() - this.random.nextFloat()) * 0.2f);
+        }
+    }
+
 
 
 
@@ -316,7 +335,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             Vec3i blockPos = null;
             BlockPos oldPos = null;
             BlockPos newPos = null;
-            Iterable<BlockPos> iterable = BlockPos.iterate(MathHelper.floor(this.mob.getX() - 20.0), MathHelper.floor(this.mob.getY() - 5.0), MathHelper.floor(this.mob.getZ() - 20.0), MathHelper.floor(this.mob.getX() + 20.0), this.mob.getBlockY(), MathHelper.floor(this.mob.getZ() + 20.0));
+            Iterable<BlockPos> iterable = BlockPos.iterate(MathHelper.floor(this.mob.getX() - 20.0), MathHelper.floor(this.mob.getY() - 10.0), MathHelper.floor(this.mob.getZ() - 20.0), MathHelper.floor(this.mob.getX() + 20.0), this.mob.getBlockY(), MathHelper.floor(this.mob.getZ() + 20.0));
             for (BlockPos blockPos2 : iterable) {
                 if (!this.mob.world.getFluidState(blockPos2).isIn(FluidTags.WATER)) continue;
                 blockPos = blockPos2;
@@ -325,6 +344,11 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             }
             if (blockPos != null) {
                 this.mob.getNavigation().startMovingTo(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1.0);
+                noWater = false;
+            }
+            else
+            {
+                noWater = true;
             }
         }
     }
@@ -370,6 +394,11 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
                     return true;
                 }
 
+            }
+
+            if(this.mob.hasPassengers() && this.mob.noWater && !this.mob.isTame() && this.mob.lastPass != null)
+            {
+                return true;
             }
 
             return false;
