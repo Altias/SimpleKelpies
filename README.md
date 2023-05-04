@@ -1,7 +1,5 @@
 # SimpleKelpies-1.19.4
 
-I know the repository is named 1.19.3 but I promise it's actually for 1.19.4, I started developing on .3 before updating it.
-
 Simple Kelpies, as the name suggests, adds kelpies to Minecraft!
 
 Kelpies are mythical beings, said to take the form of (usually white) horses in order to lure people onto their backs so they can take them into the water and drown/eat them. 
