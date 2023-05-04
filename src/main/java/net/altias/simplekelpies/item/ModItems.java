@@ -17,6 +17,8 @@ public class ModItems {
             new SpawnEggItem(ModEntities.KELPIE, 0xC4A17F, 0xFC0000,
                     new FabricItemSettings()));
 
+    public static final Item GOLDEN_BRIDLE = registerItem("golden_bridle", new Item(new FabricItemSettings()));
+
     public static Item registerItem(String name, Item item)
     {
         return Registry.register(Registries.ITEM, new Identifier(SimpleKelpies.MOD_ID,name), item);
@@ -24,7 +26,9 @@ public class ModItems {
 
     public static void addItemsToItemGroup()
     {
+
         addToItemGroup(ItemGroups.SPAWN_EGGS,KELPIE_SPAWN_EGG);
+        addToItemGroup(ItemGroups.FUNCTIONAL, GOLDEN_BRIDLE);
     }
 
     public static void addToItemGroup(ItemGroup group, Item item)

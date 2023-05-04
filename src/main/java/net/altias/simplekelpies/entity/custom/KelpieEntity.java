@@ -1,7 +1,9 @@
 package net.altias.simplekelpies.entity.custom;
 
 import net.altias.simplekelpies.SimpleKelpies;
+import net.altias.simplekelpies.item.ModItems;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.*;
@@ -11,20 +13,28 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.AbstractSkeletonEntity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.entity.passive.*;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.BlockSoundGroup;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Hand;
 import net.minecraft.util.TimeHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -41,6 +51,7 @@ import java.util.UUID;
 public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     private static final TrackedData<Integer> ANGER_TIME = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
+    private static final int SADDLED_FLAG = 4;
 
     public Entity lastPass;
 
@@ -54,8 +65,9 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     public static DefaultAttributeContainer.Builder setAttributes() {
         return AnimalEntity.createMobAttributes()
                 .add(EntityAttributes.GENERIC_MAX_HEALTH, 30.0D)
-                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 4.0f)
-                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 2.0f)
+                .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 8.0f)
+                .add(EntityAttributes.GENERIC_ATTACK_SPEED, 3.0f)
+                .add(EntityAttributes.HORSE_JUMP_STRENGTH, 1.1)
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.4f);
     }
 
@@ -64,7 +76,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         this.goalSelector.add(1, new SwimGoal(this));
         this.goalSelector.add(2, new TakeRiderToWaterGoal(this));
         this.goalSelector.add(2, new SlayRiderGoal(this));
-        this.goalSelector.add(4, new PounceAtTargetGoal(this, 0.4f));
+       // this.goalSelector.add(4, new PounceAtTargetGoal(this, 0.4f));
         this.goalSelector.add(5, new MeleeAttackGoal(this, 1.2, true));
         this.goalSelector.add(7, new AnimalMateGoal(this, 1.0));
         this.goalSelector.add(8, new WanderAroundFarGoal(this, 0.7));
@@ -72,7 +84,6 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         this.goalSelector.add(10, new LookAroundGoal(this));
         this.targetSelector.add(3, new RevengeGoal(this, new Class[0]));
         this.targetSelector.add(3, new SlayRiderGoal(this, new Class[0]));
-        this.targetSelector.add(4, new ActiveTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
         this.targetSelector.add(8, new UniversalAngerGoal<KelpieEntity>(this, true));
         if (this.shouldAmbientStand() && !this.hasAngerTime() &&!this.hasPassengers()) {
             this.goalSelector.add(9, new AmbientStandGoal(this));
@@ -136,6 +147,33 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     }
 
     @Override
+    public ActionResult interactMob(PlayerEntity player, Hand hand) {
+
+
+        ItemStack itemStack = player.getStackInHand(hand);
+        Item item = itemStack.getItem();
+
+        if(itemStack.isOf(ModItems.GOLDEN_BRIDLE) && !this.isTame())
+        {
+            this.setOwnerUuid(player.getUuid());
+            this.setTame(true);
+            this.setHorseFlag(SADDLED_FLAG,true);
+
+            this.world.sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);
+
+            if (!player.getAbilities().creativeMode) {
+                itemStack.decrement(1);
+            }
+
+            return ActionResult.SUCCESS;
+        }
+
+        super.interactMob(player, hand);
+
+        return ActionResult.SUCCESS;
+    }
+
+    @Override
     protected void playWalkSound(BlockSoundGroup group) {
         super.playWalkSound(group);
         if (this.random.nextInt(10) == 0) {
@@ -184,12 +222,24 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     }
 
     @Override
+    public boolean canBreatheInWater() {
+        return true;
+    }
+
+
+
+    @Override
     public void tickMovement()
     {
         super.tickMovement();
 
         if (!this.world.isClient) {
             this.tickAngerLogic((ServerWorld)this.world, true);
+        }
+
+        if (this.isWet())
+        {
+            this.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 20,2,true,false),this);
         }
     }
 
@@ -209,16 +259,46 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             }
         }
 
+        if(this.getTarget() != null) {
+            if (this.getTarget() instanceof PlayerEntity && this.isTame()) {
+
+                SimpleKelpies.LOGGER.info("I am a terrible no good kelpie attacking my owner");
+                this.setTarget(null);
+                this.setAngryAt(null);
+            }
+        }
+
+        if (!this.world.isClient) {
+            this.tickAngerLogic((ServerWorld)this.world, true);
+        }
+
 
 
     }
 
+    @Override
+    public boolean hasArmorSlot() {
+        return true;
+    }
+
+    @Override
+    public boolean canBeSaddled() {
+        return false;
+    }
+
+    protected void updateSaddle() {
+        if (this.world.isClient) {
+            return;
+        }
+        this.setHorseFlag(SADDLED_FLAG, this.isTame());
+    }
+
     class TakeRiderToWaterGoal extends MoveIntoWaterGoal
     {
-        private final PathAwareEntity mob;
+        private final KelpieEntity mob;
         private LivingEntity pass;
 
-        public TakeRiderToWaterGoal(PathAwareEntity mob) {
+        public TakeRiderToWaterGoal(KelpieEntity mob) {
             super(mob);
             this.mob = mob;
         }
@@ -226,7 +306,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         @Override
         public boolean canStart()
         {
-            if (super.canStart() && this.mob.hasPassengers() && !this.mob.isTouchingWater())
+            if (super.canStart() && this.mob.hasPassengers() && this.mob.isOnGround() && !this.mob.world.getFluidState(this.mob.getBlockPos()).isIn(FluidTags.WATER) && !this.mob.isTame())
             {
                 if(this.mob.getFirstPassenger() instanceof LivingEntity) {
                     this.pass = (LivingEntity)this.mob.getFirstPassenger();
@@ -248,6 +328,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
                 if (!this.mob.world.getFluidState(blockPos2).isIn(FluidTags.WATER)) continue;
                 blockPos = blockPos2;
                 break;
+
             }
             if (blockPos != null) {
                 this.mob.getNavigation().startMovingTo(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1.0);
@@ -271,7 +352,16 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         @Override
         public boolean canStart() {
 
-                if(this.mob.hasPassengers() && this.mob.isTouchingWater())
+            if(this.mob.lastPass instanceof PlayerEntity)
+            {
+                PlayerEntity p = (PlayerEntity)lastPass;
+                if(p.getAbilities().creativeMode)
+                {
+                    return(false);
+                }
+            }
+
+                if(this.mob.lastPass!= null && this.mob.isTouchingWater() && !this.mob.isTame())
                 {
                     if(this.mob.getFirstPassenger() instanceof LivingEntity) {
                         this.pass = (LivingEntity)this.mob.getFirstPassenger();
@@ -280,7 +370,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
 
                 }
 
-            if(this.mob.lastPass != null && !this.mob.hasPassengers())
+            if(this.mob.lastPass != null && !this.mob.hasPassengers() && !this.mob.isTame())
             {
                 if(this.mob.lastPass instanceof LivingEntity) {
                     this.pass = (LivingEntity)lastPass;
@@ -298,6 +388,11 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
                 this.mob.setTarget(this.pass);
                 this.target = this.mob.getTarget();
                 this.maxTimeWithoutVisibility = 300;
+
+                if (!this.mob.lastPass.isAlive())
+                {
+                    this.mob.lastPass = null;
+                }
 
 
                 super.start();
