@@ -77,7 +77,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
 
     @Override
     protected void initGoals() {
-        this.goalSelector.add(1, new SwimGoal(this));
+        this.goalSelector.add(1, new KelpieSwimGoal(this));
         this.goalSelector.add(2, new TakeRiderToWaterGoal(this));
         this.goalSelector.add(2, new SlayRiderGoal(this));
        // this.goalSelector.add(4, new PounceAtTargetGoal(this, 0.4f));
@@ -109,7 +109,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
-        this.readAngerFromNbt(this.world, nbt);
+        this.readAngerFromNbt(this.getWorld(), nbt);
     }
 
     @Nullable
@@ -163,7 +163,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             this.setTame(true);
             this.setHorseFlag(SADDLED_FLAG,true);
 
-            this.world.sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);
+            this.getWorld().sendEntityStatus(this, EntityStatuses.ADD_POSITIVE_PLAYER_REACTION_PARTICLES);
 
             if (!player.getAbilities().creativeMode) {
                 itemStack.decrement(1);
@@ -196,6 +196,8 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         }
     }
 
+
+
     @Override
     protected SoundEvent getAmbientSound() {
         if (this.hasAngerTime()) {
@@ -226,6 +228,34 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         return SoundEvents.ENTITY_HORSE_ANGRY;
     }
 
+    protected SoundEvent getSwimSound() {
+        if (this.isOnGround()) {
+            if (!this.hasPassengers()) {
+                return SoundEvents.ENTITY_SKELETON_HORSE_STEP_WATER;
+            }
+
+            ++this.soundTicks;
+            if (this.soundTicks > 5 && this.soundTicks % 3 == 0) {
+                return SoundEvents.ENTITY_SKELETON_HORSE_GALLOP_WATER;
+            }
+
+            if (this.soundTicks <= 5) {
+                return SoundEvents.ENTITY_SKELETON_HORSE_STEP_WATER;
+            }
+        }
+
+        return SoundEvents.ENTITY_SKELETON_HORSE_SWIM;
+    }
+
+    protected void playJumpSound() {
+        if (this.isTouchingWater()) {
+            this.playSound(SoundEvents.ENTITY_SKELETON_HORSE_JUMP_WATER, 0.4F, 1.0F);
+        } else {
+            super.playJumpSound();
+        }
+
+    }
+
     @Override
     public boolean eatsGrass()
     {
@@ -245,7 +275,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         SoundEvent soundEvent;
         //this.setEating();
         if (!this.isSilent() && (soundEvent = this.getEatSound()) != null) {
-            this.world.playSound(null, this.getX(), this.getY(), this.getZ(), soundEvent, this.getSoundCategory(), 1.0f, 1.0f + (this.random.nextFloat() - this.random.nextFloat()) * 0.2f);
+            this.getWorld().playSound(null, this.getX(), this.getY(), this.getZ(), soundEvent, this.getSoundCategory(), 1.0f, 1.0f + (this.random.nextFloat() - this.random.nextFloat()) * 0.2f);
         }
     }
 
@@ -257,13 +287,17 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     {
         super.tickMovement();
 
-        if (!this.world.isClient) {
-            this.tickAngerLogic((ServerWorld)this.world, true);
+        if (!this.getWorld().isClient) {
+            this.tickAngerLogic((ServerWorld)this.getWorld(), true);
         }
 
         if (this.isWet())
         {
             this.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 20,2,true,false),this);
+
+            if(this.hasPassengers()) {
+                this.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20, 2, true, false), this);
+            }
         }
     }
 
@@ -283,8 +317,8 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             }
         }
 
-        if (!this.world.isClient) {
-            this.tickAngerLogic((ServerWorld)this.world, true);
+        if (!this.getWorld().isClient) {
+            this.tickAngerLogic((ServerWorld)this.getWorld(), true);
         }
 
 
@@ -302,7 +336,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     }
 
     protected void updateSaddle() {
-        if (this.world.isClient) {
+        if (this.getWorld().isClient) {
             return;
         }
         this.setHorseFlag(SADDLED_FLAG, this.isTame());
@@ -321,7 +355,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         @Override
         public boolean canStart()
         {
-            if (super.canStart() && this.mob.hasPassengers() && this.mob.isOnGround() && !this.mob.world.getFluidState(this.mob.getBlockPos()).isIn(FluidTags.WATER) && !this.mob.isTame())
+            if (super.canStart() && this.mob.hasPassengers() && this.mob.isOnGround() && !this.mob.getWorld().getFluidState(this.mob.getBlockPos()).isIn(FluidTags.WATER) && !this.mob.isTame())
             {
                 if(this.mob.getFirstPassenger() instanceof LivingEntity) {
                     this.pass = (LivingEntity)this.mob.getFirstPassenger();
@@ -340,7 +374,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             BlockPos newPos = null;
             Iterable<BlockPos> iterable = BlockPos.iterate(MathHelper.floor(this.mob.getX() - 20.0), MathHelper.floor(this.mob.getY() - 10.0), MathHelper.floor(this.mob.getZ() - 20.0), MathHelper.floor(this.mob.getX() + 20.0), this.mob.getBlockY(), MathHelper.floor(this.mob.getZ() + 20.0));
             for (BlockPos blockPos2 : iterable) {
-                if (!this.mob.world.getFluidState(blockPos2).isIn(FluidTags.WATER)) continue;
+                if (!this.mob.getWorld().getFluidState(blockPos2).isIn(FluidTags.WATER)) continue;
                 blockPos = blockPos2;
                 break;
 
@@ -452,7 +486,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             {
                 return false;
             }
-            if (livingEntity.getType() == EntityType.PLAYER && this.mob.world.getGameRules().getBoolean(GameRules.UNIVERSAL_ANGER)) {
+            if (livingEntity.getType() == EntityType.PLAYER && this.mob.getWorld().getGameRules().getBoolean(GameRules.UNIVERSAL_ANGER)) {
                 return false;
             }
             for (Class<?> class_ : this.noRevengeTypes) {
@@ -460,6 +494,23 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
                 return false;
             }
             return this.canTrack(livingEntity, VALID_AVOIDABLES_PREDICATE);
+        }
+    }
+
+    class KelpieSwimGoal extends SwimGoal
+    {
+        private final KelpieEntity mob;
+
+        public KelpieSwimGoal(KelpieEntity mob) {
+            super(mob);
+
+            this.mob = mob;
+        }
+
+        @Override
+        public boolean canStart() {
+
+            return(!mob.hasPassengers());
         }
     }
 

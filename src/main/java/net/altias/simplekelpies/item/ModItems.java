@@ -10,6 +10,7 @@ import net.minecraft.item.ItemGroups;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
 
 public class ModItems {
@@ -31,7 +32,7 @@ public class ModItems {
         addToItemGroup(ItemGroups.FUNCTIONAL, GOLDEN_BRIDLE);
     }
 
-    public static void addToItemGroup(ItemGroup group, Item item)
+    public static void addToItemGroup(RegistryKey<ItemGroup> group, Item item)
     {
         ItemGroupEvents.modifyEntriesEvent(group).register(entries -> entries.add(item));
     }
