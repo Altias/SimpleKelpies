@@ -1,4 +1,4 @@
-# SimpleKelpies-1.19.4
+# SimpleKelpies
 
 Simple Kelpies, as the name suggests, adds kelpies to Minecraft!
 
