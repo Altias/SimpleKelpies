@@ -196,6 +196,10 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         }
     }
 
+    protected float getBaseMovementSpeedMultiplier() {
+        return 0.96F;
+    }
+
 
 
     @Override
