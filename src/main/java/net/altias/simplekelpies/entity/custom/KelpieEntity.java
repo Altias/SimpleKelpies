@@ -514,7 +514,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         @Override
         public boolean canStart() {
 
-            return(!mob.hasPassengers());
+            return(!mob.hasPassengers() && super.canStart());
         }
     }
 

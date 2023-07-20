@@ -27,6 +27,11 @@ public class KelpieRenderer extends MobEntityRenderer<KelpieEntity, HorseEntityM
         {
             return ANGER;
         }
+
+        if (entity.isTame() && entity.isWet())
+        {
+            return ANGER;
+        }
         return NORMAL;
     }
 }
