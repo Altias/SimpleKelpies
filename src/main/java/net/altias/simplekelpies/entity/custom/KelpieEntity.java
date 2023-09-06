@@ -1,7 +1,9 @@
 package net.altias.simplekelpies.entity.custom;
 
 import net.altias.simplekelpies.SimpleKelpies;
+import net.altias.simplekelpies.entity.ModEntities;
 import net.altias.simplekelpies.item.ModItems;
+import net.altias.simplekelpies.mixin.HorseInvoker;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
@@ -33,28 +35,29 @@ import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TimeHelper;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.intprovider.UniformIntProvider;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.world.EntityView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.EnumSet;
+import java.util.Random;
 import java.util.UUID;
 
 public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     private static final TrackedData<Integer> ANGER_TIME = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
     private static final int SADDLED_FLAG = 4;
+
+    public boolean rareColor = false;
 
     public Entity lastPass;
     public boolean noWater;
@@ -112,11 +115,73 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         this.readAngerFromNbt(this.getWorld(), nbt);
     }
 
+    public boolean canBreedWith(AnimalEntity other) {
+        if (other == this) {
+            return false;
+        } else if (!(other instanceof KelpieEntity) && !(other instanceof HorseEntity)) {
+            return false;
+        } else {
+            return this.canBreed() && canOtherBreed((AbstractHorseEntity) other);
+        }
+    }
+
+    protected boolean canOtherBreed(AbstractHorseEntity other) {
+        return !other.hasPassengers() && !other.hasVehicle() && other.isTame() && other.isBaby() && other.getHealth() >= other.getMaxHealth() && other.isInLove();
+    }
+
+
     @Nullable
     @Override
     public PassiveEntity createChild(ServerWorld world, PassiveEntity entity)
     {
-        return null;
+        if (entity instanceof HorseEntity)
+        {
+            HorseEntity horseEntity = (HorseEntity)entity;
+            HorseEntity horseEntity2 = (HorseEntity)EntityType.HORSE.create(world);
+            if (horseEntity2 != null) {
+                int i = this.random.nextInt(9);
+                HorseColor horseColor;
+                if (i < 4) {
+                    horseColor = HorseColor.WHITE;
+                } else if (i < 8) {
+                    horseColor = horseEntity.getVariant();
+                } else {
+                    horseColor = (HorseColor) Util.getRandom(HorseColor.values(), this.random);
+                }
+
+                int j = this.random.nextInt(5);
+                HorseMarking horseMarking;
+                if (j < 2) {
+                    horseMarking = HorseMarking.NONE;
+                } else if (j < 4) {
+                    horseMarking = horseEntity.getMarking();
+                } else {
+                    horseMarking = (HorseMarking)Util.getRandom(HorseMarking.values(), this.random);
+                }
+
+                ((HorseInvoker)horseEntity2).invokeSetHorseVariant(horseColor, horseMarking);
+                this.setChildAttributes(entity, horseEntity2);
+            }
+
+            return horseEntity2;
+        }
+
+        else
+        {
+            KelpieEntity kelpieEntity = (KelpieEntity) ModEntities.KELPIE.create(world);
+            if (kelpieEntity != null) {
+                Random rollColor = new Random();
+                int isRare = rollColor.nextInt(1000);
+
+                if(isRare == 8)
+                {
+                    kelpieEntity.rareColor = true;
+                }
+                this.setChildAttributes(entity, kelpieEntity);
+
+            }
+            return(kelpieEntity);
+        }
     }
 
     @Override
