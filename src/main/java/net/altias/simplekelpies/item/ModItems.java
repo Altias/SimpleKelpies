@@ -20,6 +20,8 @@ public class ModItems {
 
     public static final Item GOLDEN_BRIDLE = registerItem("golden_bridle", new Item(new FabricItemSettings()));
 
+    public static final Item GOLDFIN_COD = registerItem("goldfin_cod", new Item(new FabricItemSettings().food(ModFoodComponents.GOLDFIN_COD)));
+
     public static Item registerItem(String name, Item item)
     {
         return Registry.register(Registries.ITEM, new Identifier(SimpleKelpies.MOD_ID,name), item);
@@ -30,6 +32,7 @@ public class ModItems {
 
         addToItemGroup(ItemGroups.SPAWN_EGGS,KELPIE_SPAWN_EGG);
         addToItemGroup(ItemGroups.FUNCTIONAL, GOLDEN_BRIDLE);
+        addToItemGroup(ItemGroups.FOOD_AND_DRINK, GOLDFIN_COD);
     }
 
     public static void addToItemGroup(RegistryKey<ItemGroup> group, Item item)

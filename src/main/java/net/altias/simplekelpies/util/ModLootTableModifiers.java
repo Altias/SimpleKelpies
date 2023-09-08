@@ -18,6 +18,8 @@ public class ModLootTableModifiers {
     public static final Identifier SMALL_WATER_CHEST = new Identifier ("minecraft","chests/underwater_ruin_small");
     public static final Identifier SHIPWRECK_CHEST = new Identifier("minecraft", "chests/shipwreck_treasure");
 
+    public static final Identifier FISHING = new Identifier("minecraft","gameplay/fishing/fish");
+
     public static void modifyLootTables() {
         LootTableEvents.MODIFY.register((resourceManager, lootManager, id, tableBuilder, source) ->{
 
@@ -31,7 +33,7 @@ public class ModLootTableModifiers {
 
             if(BIG_WATER_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.9f)) //1% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(0.9f)) //90% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
 
                 tableBuilder.pool(poolBuilder);
@@ -39,7 +41,7 @@ public class ModLootTableModifiers {
 
             if(SMALL_WATER_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.50f)) //1% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(0.50f)) //50% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
 
                 tableBuilder.pool(poolBuilder);
@@ -47,8 +49,16 @@ public class ModLootTableModifiers {
 
             if(SHIPWRECK_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.10f)) //1% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(0.10f)) //10% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
+
+                tableBuilder.pool(poolBuilder);
+            }
+
+            if (FISHING.equals(id)){
+                LootPool.Builder poolBuilder = LootPool.builder()
+                        .conditionally(RandomChanceLootCondition.builder(0.01f)) //1% Drop rate
+                        .with(ItemEntry.builder(ModItems.GOLDFIN_COD));
 
                 tableBuilder.pool(poolBuilder);
             }

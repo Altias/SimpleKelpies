@@ -126,7 +126,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     }
 
     protected boolean canOtherBreed(AbstractHorseEntity other) {
-        return !other.hasPassengers() && !other.hasVehicle() && other.isTame() && other.isBaby() && other.getHealth() >= other.getMaxHealth() && other.isInLove();
+        return !other.hasPassengers() && !other.hasVehicle() && other.isTame() && !other.isBaby() && other.getHealth() >= other.getMaxHealth() && other.isInLove();
     }
 
 
@@ -237,7 +237,7 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             return ActionResult.SUCCESS;
         }
 
-        if (this.isTame() && itemStack.isFood() && (item.getFoodComponent().isMeat() || itemStack.isOf(Items.COD) || itemStack.isOf(Items.SALMON)) && this.getHealth() < this.getMaxHealth()) {
+        if (this.isTame() && itemStack.isFood() && (item.getFoodComponent().isMeat() || itemStack.isOf(Items.COD) || itemStack.isOf(Items.SALMON) || itemStack.isOf(ModItems.GOLDFIN_COD)) && this.getHealth() < this.getMaxHealth()) {
 
             this.heal(item.getFoodComponent().getHunger());
             this.playEatingAnimation();
@@ -245,12 +245,33 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             if (!player.getAbilities().creativeMode) {
                 itemStack.decrement(1);
             }
+
             return ActionResult.SUCCESS;
+        }
+
+        if (this.isTame() && this.isBreedingItem(itemStack) && this.getHealth() >= this.getMaxHealth())
+        {
+            if (!this.getWorld().isClient && this.getBreedingAge() == 0 && !this.isInLove()) {
+                this.lovePlayer(player);
+
+                if (!player.getAbilities().creativeMode) {
+                    itemStack.decrement(1);
+                }
+
+                return ActionResult.SUCCESS;
+            }
+
+
         }
 
         super.interactMob(player, hand);
 
         return ActionResult.SUCCESS;
+    }
+
+    @Override
+    public boolean isBreedingItem(ItemStack stack) {
+        return stack.isOf(ModItems.GOLDFIN_COD);
     }
 
     @Override
