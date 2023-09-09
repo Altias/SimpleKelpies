@@ -35,7 +35,7 @@ public class KelpieRenderer extends MobEntityRenderer<KelpieEntity, HorseEntityM
             return ANGER;
         }
 
-        if (entity.rareColor)
+        if (entity.getVariant() == 1)
         {
             return(RARE);
         }

@@ -2,16 +2,16 @@ package net.altias.simplekelpies.mixin;
 
 import net.minecraft.entity.passive.AbstractHorseEntity;
 import net.minecraft.entity.passive.HorseColor;
-import net.minecraft.entity.passive.HorseEntity;
 import net.minecraft.entity.passive.HorseMarking;
+import net.minecraft.entity.passive.PassiveEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(HorseEntity.class)
-public interface HorseInvoker {
+@Mixin(AbstractHorseEntity.class)
+public interface AttributeInvoker {
 
-    @Invoker("setHorseVariant")
-    public void invokeSetHorseVariant(HorseColor color, HorseMarking marking);
+    @Invoker("setChildAttributes")
+    public void invokeSetChildAttributes(PassiveEntity other, AbstractHorseEntity child);
 
 }
 

@@ -3,6 +3,7 @@ package net.altias.simplekelpies.entity.custom;
 import net.altias.simplekelpies.SimpleKelpies;
 import net.altias.simplekelpies.entity.ModEntities;
 import net.altias.simplekelpies.item.ModItems;
+import net.altias.simplekelpies.mixin.AHorseInvoker;
 import net.altias.simplekelpies.mixin.HorseInvoker;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
@@ -55,9 +56,11 @@ import java.util.UUID;
 public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     private static final TrackedData<Integer> ANGER_TIME = DataTracker.registerData(WolfEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final UniformIntProvider ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
+
+    private static final TrackedData<Integer> VARIANT = DataTracker.registerData(KelpieEntity.class, TrackedDataHandlerRegistry.INTEGER);;
     private static final int SADDLED_FLAG = 4;
 
-    public boolean rareColor = false;
+    public int rareColor = 0;
 
     public Entity lastPass;
     public boolean noWater;
@@ -101,6 +104,15 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(ANGER_TIME, 0);
+        this.dataTracker.startTracking(VARIANT, 0);
+    }
+
+    private void setVariant(int variant) {
+        this.dataTracker.set(VARIANT, variant);
+    }
+
+    public int getVariant() {
+        return (Integer)this.dataTracker.get(VARIANT);
     }
 
     @Override
@@ -121,12 +133,8 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
         } else if (!(other instanceof KelpieEntity) && !(other instanceof HorseEntity)) {
             return false;
         } else {
-            return this.canBreed() && canOtherBreed((AbstractHorseEntity) other);
+            return this.canBreed() && ((AHorseInvoker)other).invokeCanBreed();
         }
-    }
-
-    protected boolean canOtherBreed(AbstractHorseEntity other) {
-        return !other.hasPassengers() && !other.hasVehicle() && other.isTame() && !other.isBaby() && other.getHealth() >= other.getMaxHealth() && other.isInLove();
     }
 
 
@@ -171,11 +179,15 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
             KelpieEntity kelpieEntity = (KelpieEntity) ModEntities.KELPIE.create(world);
             if (kelpieEntity != null) {
                 Random rollColor = new Random();
-                int isRare = rollColor.nextInt(1000);
+               int isRare = rollColor.nextInt(1000);
 
                 if(isRare == 8)
                 {
-                    kelpieEntity.rareColor = true;
+                    kelpieEntity.setVariant(1);
+                }
+                else
+                {
+                    kelpieEntity.setVariant(0);
                 }
                 this.setChildAttributes(entity, kelpieEntity);
 

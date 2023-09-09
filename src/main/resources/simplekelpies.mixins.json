@@ -4,7 +4,11 @@
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
 		"KelpieMixin",
-		"HorseInvoker"
+		"HorseInvoker",
+		"AHorseInvoker",
+		"BreedingMixin",
+		"AttributeInvoker",
+		"ChildMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
