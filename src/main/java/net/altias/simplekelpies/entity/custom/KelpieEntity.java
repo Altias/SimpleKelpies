@@ -119,12 +119,14 @@ public class KelpieEntity extends AbstractHorseEntity implements Angerable {
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
         this.writeAngerToNbt(nbt);
+        nbt.putInt("Variant", this.getVariant());
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
         super.readCustomDataFromNbt(nbt);
         this.readAngerFromNbt(this.getWorld(), nbt);
+        this.setVariant(nbt.getInt("Variant"));
     }
 
     public boolean canBreedWith(AnimalEntity other) {

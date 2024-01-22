@@ -1,5 +1,7 @@
 package net.altias.simplekelpies.util;
 
+import net.altias.simplekelpies.SimpleKelpies;
+import net.altias.simplekelpies.config.SimpleKelpiesConfig;
 import net.altias.simplekelpies.item.ModItems;
 import net.fabricmc.fabric.api.loot.v2.FabricLootPoolBuilder;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
@@ -25,7 +27,7 @@ public class ModLootTableModifiers {
 
             if(DUNGEON_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.01f)) //1% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(SimpleKelpies.CONFIG.bridleDungeonDrop())) //1% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
 
                         tableBuilder.pool(poolBuilder);
@@ -33,7 +35,7 @@ public class ModLootTableModifiers {
 
             if(BIG_WATER_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.9f)) //90% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(SimpleKelpies.CONFIG.bridleBigWaterRuinDrop())) //90% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
 
                 tableBuilder.pool(poolBuilder);
@@ -41,7 +43,7 @@ public class ModLootTableModifiers {
 
             if(SMALL_WATER_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.50f)) //50% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(SimpleKelpies.CONFIG.bridleSmallWaterRuinDrop())) //50% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
 
                 tableBuilder.pool(poolBuilder);
@@ -49,7 +51,7 @@ public class ModLootTableModifiers {
 
             if(SHIPWRECK_CHEST.equals(id)) {
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.10f)) //10% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(SimpleKelpies.CONFIG.bridleShipewreckDrop())) //10% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDEN_BRIDLE));
 
                 tableBuilder.pool(poolBuilder);
@@ -57,7 +59,7 @@ public class ModLootTableModifiers {
 
             if (FISHING.equals(id)){
                 LootPool.Builder poolBuilder = LootPool.builder()
-                        .conditionally(RandomChanceLootCondition.builder(0.01f)) //1% Drop rate
+                        .conditionally(RandomChanceLootCondition.builder(SimpleKelpies.CONFIG.goldfinCodFishChance())) //1% Drop rate
                         .with(ItemEntry.builder(ModItems.GOLDFIN_COD));
 
                 tableBuilder.pool(poolBuilder);

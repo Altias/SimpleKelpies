@@ -1,5 +1,7 @@
 package net.altias.simplekelpies;
 
+import net.altias.simplekelpies.config.SimpleKelpiesCommon;
+import net.altias.simplekelpies.config.SimpleKelpiesConfig;
 import net.altias.simplekelpies.entity.ModEntities;
 import net.altias.simplekelpies.entity.custom.KelpieEntity;
 import net.altias.simplekelpies.item.ModItems;
@@ -14,6 +16,8 @@ import org.slf4j.LoggerFactory;
 public class SimpleKelpies implements ModInitializer {
     public static final String MOD_ID = "simplekelpies";
     public static final Logger LOGGER = LoggerFactory.getLogger("simplekelpies");
+
+    public static final SimpleKelpiesCommon CONFIG = SimpleKelpiesCommon.createAndLoad();
 
     @Override
     public void onInitialize() {
